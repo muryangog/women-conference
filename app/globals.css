@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { scroll-behavior: smooth; }
+body { background: #FCF6E6; color: #3a0a1d; }
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-full px-6 py-3 text-base font-semibold transition
+      focus:outline-none focus-visible:ring-4 focus-visible:ring-rose/40 disabled:opacity-60;
+  }
+  .btn-cream { @apply bg-creme text-bordeaux hover:bg-white; }
+  .btn-rose { @apply bg-rose text-creme-soft hover:bg-rose-deep active:scale-[.99]; }
+  /* 16px minimum : évite le zoom automatique sur iPhone */
+  .field {
+    @apply w-full rounded-xl border border-bordeaux/20 bg-white px-3.5 py-2 text-base text-bordeaux
+      placeholder:text-bordeaux/40 focus:border-rose focus:outline-none focus:ring-4 focus:ring-rose/15;
+  }
+  .label { @apply mb-0.5 block text-[13px] font-semibold text-bordeaux/80; }
+  .seg { @apply grid gap-1 rounded-xl bg-bordeaux/[.07] p-1; }
+  .seg label { @apply flex cursor-pointer items-center justify-center rounded-lg px-2 py-2 text-center text-sm font-semibold
+      text-bordeaux/70 transition has-[:checked]:bg-white has-[:checked]:text-rose-deep has-[:checked]:shadow
+      has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-rose; }
+  .seg input { @apply sr-only; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation: none !important; transition: none !important; }
+}
