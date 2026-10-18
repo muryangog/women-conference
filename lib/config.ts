@@ -29,6 +29,17 @@ export const TRANSPORT_LABELS: Record<Transport, string> = {
 
 export type Attendance = "onsite" | "online";
 
+export type Category = "ordinary" | "clergy" | "honorary";
+export const CATEGORY_LABELS: Record<Category, string> = {
+  ordinary: "Ordinaire",
+  clergy: "Clergé",
+  honorary: "Personnalité",
+};
+export const TITLE_SUGGESTIONS = [
+  "Pasteur", "Pasteure", "Évêque", "Révérend", "Apôtre", "Prophète", "Prophétesse", "Mère",
+  "Honorable", "Députée", "Sénatrice", "Ministre", "Gouverneure", "Administratrice", "Dr", "Professeure",
+];
+
 /** Pays proposés pour la participation en ligne : [nom, indicatif]. Ajoute-en librement. */
 export const COUNTRIES: [string, string][] = [
   ["Burundi", "257"], ["Rwanda", "250"], ["RDC (Congo-Kinshasa)", "243"], ["Tanzanie", "255"],

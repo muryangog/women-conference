@@ -12,6 +12,8 @@ Next.js 14 + Tailwind + Supabase.
 
 Si tu avais déjà exécuté `schema.sql` avant l'ajout du live en ligne, exécute `supabase/migration-live.sql`.
 
+Ensuite exécute `supabase/migration-checkin.sql` (catégories ordinaire / clergé / personnalité, titres, provenance et table des présences du jour J).
+
 ## 2. En local
 ```bash
 cp .env.example .env.local   # collez l'URL et la clé anon

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase, type PickupPoint, type Registration } from "@/lib/supabase";
-import { TRANSPORT_LABELS } from "@/lib/config";
+import { CATEGORY_LABELS, TRANSPORT_LABELS } from "@/lib/config";
 
 type Tab = "list" | "points";
 
@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "yes" | "no" | "unsure">("all");
   const [mode, setMode] = useState<"all" | "onsite" | "online">("all");
+  const [cat, setCat] = useState<"all" | "ordinary" | "clergy" | "honorary" | "pending">("all");
   const [tab, setTab] = useState<Tab>("list");
 
   const [nz, setNz] = useState("Quartier Sud");
@@ -65,9 +66,10 @@ export default function AdminPage() {
       (r) =>
         (filter === "all" || r.needs_transport === filter) &&
         (mode === "all" || r.attendance === mode) &&
-        (!s || [r.full_name, r.phone, r.commune, r.church, r.pickup_point, r.country].some((v) => (v ?? "").toLowerCase().includes(s)))
+        (cat === "all" || (cat === "pending" ? r.category !== "ordinary" && !r.category_confirmed : r.category === cat)) &&
+        (!s || [r.full_name, CATEGORY_LABELS[r.category], r.title, r.phone, r.commune, r.church, r.pickup_point, r.country, r.title, r.organization].some((v) => (v ?? "").toLowerCase().includes(s)))
     );
-  }, [rows, q, filter, mode]);
+  }, [rows, q, filter, mode, cat]);
 
   const byPickup = useMemo(() => {
     const m = new Map<string, number>();
@@ -90,9 +92,9 @@ export default function AdminPage() {
 
   function exportCsv() {
     const esc = (v: string | null) => `"${(v ?? "").replace(/"/g, '""')}"`;
-    const head = ["Nom", "Téléphone", "Participation", "Pays", "Rassemblement", "Commune / ville", "Église", "Transport", "Point de départ", "Date"];
+    const head = ["Nom", "Catégorie", "Titre", "Téléphone", "Participation", "Pays", "Rassemblement", "Commune / ville", "Église / association", "Transport", "Point de départ", "Date"];
     const lines = filtered.map((r) =>
-      [r.full_name, r.phone, r.attendance === "online" ? "En ligne" : "Sur place", r.country, r.join_group ? "Oui" : "", r.commune, r.church, r.attendance === "online" ? "" : TRANSPORT_LABELS[r.needs_transport], r.pickup_point,
+      [r.full_name, r.phone, r.attendance === "online" ? "En ligne" : "Sur place", r.country, r.join_group ? "Oui" : "", r.commune, r.organization ?? r.church, r.attendance === "online" ? "" : TRANSPORT_LABELS[r.needs_transport], r.pickup_point,
         new Date(r.created_at).toLocaleString("fr-FR")].map(esc).join(";"));
     const blob = new Blob(["\uFEFF" + [head.map(esc).join(";"), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -105,6 +107,11 @@ export default function AdminPage() {
     if (!confirm(`Supprimer l'inscription de ${name} ?`)) return;
     await supabase.from("registrations").delete().eq("id", id);
     setRows((r) => r.filter((x) => x.id !== id));
+  }
+
+  async function confirmCategory(id: string) {
+    const { error } = await supabase.from("registrations").update({ category_confirmed: true }).eq("id", id);
+    if (!error) setRows((r) => r.map((x) => (x.id === id ? { ...x, category_confirmed: true } : x)));
   }
 
   async function addPoint(e: React.FormEvent) {
@@ -160,8 +167,8 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <section className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[["Inscrites", rows.length], ["Sur place", rows.filter((r) => r.attendance === "onsite").length], ["En ligne", rows.filter((r) => r.attendance === "online").length], ["Transport : oui", count("yes")]].map(([l, n]) => (
+      <section className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+        {[["Inscrites", rows.length], ["Sur place", rows.filter((r) => r.attendance === "onsite").length], ["En ligne", rows.filter((r) => r.attendance === "online").length], ["Transport : oui", count("yes")], ["Clergé / personnalités", rows.filter((r) => r.category !== "ordinary").length]].map(([l, n]) => (
           <div key={l as string} className="rounded-2xl bg-rose px-4 py-3 text-creme">
             <p className="font-display text-4xl font-bold">{n}</p>
             <p className="text-sm text-creme/85">{l}</p>
@@ -209,25 +216,44 @@ export default function AdminPage() {
               <option value="onsite">Sur place</option>
               <option value="online">En ligne</option>
             </select>
+            <select className="field max-w-[14rem]" value={cat} onChange={(e) => setCat(e.target.value as typeof cat)}>
+              <option value="all">Toutes catégories</option>
+              <option value="ordinary">Ordinaires</option>
+              <option value="clergy">Clergé</option>
+              <option value="honorary">Personnalités</option>
+              <option value="pending">À confirmer (protocole)</option>
+            </select>
             <button onClick={exportCsv} className="btn btn-rose px-5 py-3 text-sm">Exporter en CSV ({filtered.length})</button>
           </div>
 
           <div className="mt-4 overflow-x-auto rounded-2xl border-2 border-bordeaux/15 bg-white">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-bordeaux text-creme">
-                <tr>{["Nom", "Téléphone", "Participation", "Commune / ville", "Église", "Transport", "Point de départ", ""].map((h) => <th key={h} className="px-3 py-2 font-semibold">{h}</th>)}</tr>
+                <tr>{["Nom", "Téléphone", "Participation", "Commune / ville", "Église / association", "Transport", "Point de départ", ""].map((h) => <th key={h} className="px-3 py-2 font-semibold">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {filtered.map((r) => (
-                  <tr key={r.id} className="border-t border-bordeaux/10">
-                    <td className="px-3 py-2 font-medium">{r.full_name}</td>
+                  <tr key={r.id} className={`border-t border-bordeaux/10 ${r.category !== "ordinary" ? "bg-creme/50" : ""}`}>
+                    <td className="px-3 py-2 font-medium">
+                      {r.category !== "ordinary" && (
+                        <span className={`mr-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${r.category_confirmed ? "bg-rose text-creme" : "bg-creme text-bordeaux ring-1 ring-rose"}`}>
+                          {CATEGORY_LABELS[r.category]}{r.category_confirmed ? "" : " · à confirmer"}
+                        </span>
+                      )}
+                      {r.title ? `${r.title} ` : ""}{r.full_name}
+                    </td>
                     <td className="px-3 py-2"><a href={`tel:${r.phone}`} className="underline">{r.phone}</a></td>
                     <td className="px-3 py-2">{r.attendance === "online" ? `En ligne · ${r.country ?? ""}${r.join_group ? " · rassemblement" : ""}` : "Sur place"}</td>
                     <td className="px-3 py-2">{r.commune}</td>
-                    <td className="px-3 py-2">{r.church}</td>
+                    <td className="px-3 py-2">{r.organization ?? r.church}</td>
                     <td className="px-3 py-2">{r.attendance === "online" ? "" : TRANSPORT_LABELS[r.needs_transport]}</td>
                     <td className="px-3 py-2">{r.pickup_point}</td>
-                    <td className="px-3 py-2 text-right"><button onClick={() => remove(r.id, r.full_name)} className="text-rose-deep underline">Supprimer</button></td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">
+                      {r.category !== "ordinary" && !r.category_confirmed && (
+                        <button onClick={() => confirmCategory(r.id)} className="mr-3 font-semibold text-rose underline">Confirmer</button>
+                      )}
+                      <button onClick={() => remove(r.id, r.full_name)} className="text-rose-deep underline">Supprimer</button>
+                    </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && <tr><td colSpan={8} className="px-3 py-8 text-center text-bordeaux/60">Aucune inscription ne correspond.</td></tr>}

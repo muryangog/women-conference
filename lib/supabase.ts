@@ -20,6 +20,11 @@ export type Registration = {
   phone: string;
   commune: string | null;
   church: string | null;
+  category: "ordinary" | "clergy" | "honorary";
+  title: string | null;
+  organization: string | null;
+  category_confirmed: boolean;
+  source: "web" | "app";
   attendance: "onsite" | "online";
   country: string | null;
   join_group: boolean;
