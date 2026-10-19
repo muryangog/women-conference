@@ -12,6 +12,8 @@ Next.js 14 + Tailwind + Supabase.
 
 Si tu avais déjà exécuté `schema.sql` avant l'ajout du live en ligne, exécute `supabase/migration-live.sql`.
 
+Exécute aussi `supabase/migration-uppercase.sql` : tout ce qui est saisi (nom, commune, église, titre, association) est mis en majuscules, site et application mobile.
+
 Ensuite exécute `supabase/migration-checkin.sql` (catégories ordinaire / clergé / personnalité, titres, provenance et table des présences du jour J).
 
 ## 2. En local

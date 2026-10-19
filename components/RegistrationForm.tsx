@@ -6,6 +6,8 @@ import { CATEGORY_LABELS, COUNTRIES, EVENT, TITLE_SUGGESTIONS, dialCode, normali
 
 type Done = { ref: string; name: string; online: boolean; country: string; transport: string; pickup: string; group: boolean; category: Category };
 
+const up = (s: string) => s.trim().toUpperCase();
+
 export default function RegistrationForm() {
   const [points, setPoints] = useState<PickupPoint[]>([]);
   const [attendance, setAttendance] = useState<Attendance>("onsite");
@@ -70,13 +72,13 @@ export default function RegistrationForm() {
     const id = crypto.randomUUID();
     const { error: err } = await supabase.from("registrations").insert({
       id,
-      full_name: name,
+      full_name: up(name),
       phone: normalized,
-      commune: commune.trim() || null,
-      church: category === "ordinary" ? church.trim() || null : null,
+      commune: up(commune) || null,
+      church: category === "ordinary" ? up(church) || null : null,
       category,
-      title: category === "ordinary" ? null : title.trim(),
-      organization: category === "ordinary" ? null : organization.trim(),
+      title: category === "ordinary" ? null : up(title),
+      organization: category === "ordinary" ? null : up(organization),
       attendance,
       country: online ? country : "Burundi",
       join_group: online ? joinGroup : false,
@@ -183,7 +185,7 @@ export default function RegistrationForm() {
       <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
         <div>
           <label htmlFor="name" className="label">Nom complet *</label>
-          <input id="name" className="field" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          <input id="name" className="field uppercase" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
         <div>
           <label htmlFor="phone" className="label">Téléphone *</label>
@@ -201,12 +203,12 @@ export default function RegistrationForm() {
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           <div>
             <label htmlFor="title" className="label">Titre *</label>
-            <input id="title" list="titles" className="field" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Pasteure, Honorable…" />
+            <input id="title" list="titles" className="field uppercase" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Pasteure, Honorable…" />
             <datalist id="titles">{TITLE_SUGGESTIONS.map((t) => <option key={t} value={t} />)}</datalist>
           </div>
           <div>
             <label htmlFor="org" className="label">Association / provenance *</label>
-            <input id="org" className="field" value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="Église, institution, lieu" />
+            <input id="org" className="field uppercase" value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="Église, institution, lieu" />
           </div>
         </div>
       )}
@@ -214,12 +216,12 @@ export default function RegistrationForm() {
       <div className={category === "ordinary" ? "grid grid-cols-2 gap-3" : ""}>
         <div>
           <label htmlFor="commune" className="label">{online ? "Ville" : "Commune / quartier"}</label>
-          <input id="commune" className="field" value={commune} onChange={(e) => setCommune(e.target.value)} />
+          <input id="commune" className="field uppercase" value={commune} onChange={(e) => setCommune(e.target.value)} />
         </div>
         {category === "ordinary" && (
           <div>
             <label htmlFor="church" className="label">Nom de votre église</label>
-            <input id="church" className="field" value={church} onChange={(e) => setChurch(e.target.value)} />
+            <input id="church" className="field uppercase" value={church} onChange={(e) => setChurch(e.target.value)} />
           </div>
         )}
       </div>
