@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Qr from "@/components/Qr";
+import Turnstile from "@/components/Turnstile";
+import { qrPayload } from "@/lib/qr";
 import { supabase, type PickupPoint } from "@/lib/supabase";
 import { CATEGORY_LABELS, COUNTRIES, EVENT, TITLE_SUGGESTIONS, dialCode, normalizePhone, type Attendance, type Category, type Transport } from "@/lib/config";
 
-type Done = { ref: string; name: string; online: boolean; country: string; transport: string; pickup: string; group: boolean; category: Category };
+type Done = { id: string; ref: string; name: string; online: boolean; country: string; transport: string; pickup: string; group: boolean; category: Category };
 
 const up = (s: string) => s.trim().toUpperCase();
 
@@ -24,6 +27,10 @@ export default function RegistrationForm() {
   const [pickup, setPickup] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
+  const [token, setToken] = useState("");
+  const [resetSignal, setResetSignal] = useState(0);
+  const onToken = useCallback((t: string) => setToken(t), []);
   const [done, setDone] = useState<Done | null>(null);
 
   const online = attendance === "online";
@@ -68,30 +75,48 @@ export default function RegistrationForm() {
       if (transport === "yes" && !pickup) return setError("Choisis ton point de départ.");
     }
 
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !token) {
+      return setError("Vérification en cours, réessaie dans un instant.");
+    }
+
     setBusy(true);
     const id = crypto.randomUUID();
-    const { error: err } = await supabase.from("registrations").insert({
-      id,
-      full_name: up(name),
-      phone: normalized,
-      commune: up(commune) || null,
-      church: category === "ordinary" ? up(church) || null : null,
-      category,
-      title: category === "ordinary" ? null : up(title),
-      organization: category === "ordinary" ? null : up(organization),
-      attendance,
-      country: online ? country : "Burundi",
-      join_group: online ? joinGroup : false,
-      needs_transport: online ? "no" : transport,
-      pickup_point: !online && transport === "yes" ? pickup : null,
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          website: honeypot,
+          turnstile: token,
+          full_name: up(name),
+          phone: normalized,
+          commune: up(commune),
+          church: category === "ordinary" ? up(church) : "",
+          category,
+          title: category === "ordinary" ? "" : up(title),
+          organization: category === "ordinary" ? "" : up(organization),
+          attendance,
+          country: online ? country : "Burundi",
+          join_group: online ? joinGroup : false,
+          needs_transport: online ? "no" : transport,
+          pickup_point: !online && transport === "yes" ? pickup : "",
+        }),
+      });
+    } catch {
+      setBusy(false);
+      return setError("Connexion impossible. Vérifie ton réseau et réessaie.");
+    }
     setBusy(false);
 
-    if (err) {
-      if (err.code === "23505") return setError("Ce numéro est déjà inscrit : ta place est réservée.");
-      return setError("L'inscription n'a pas abouti. Vérifie ta connexion et réessaie.");
+    if (!res.ok) {
+      setResetSignal((n) => n + 1);
+      if (res.status === 409) return setError("Ce numéro est déjà inscrit : ta place est réservée.");
+      const j = (await res.json().catch(() => null)) as { error?: string } | null;
+      return setError(j?.error ?? "L'inscription n'a pas abouti. Vérifie ta connexion et réessaie.");
     }
-    setDone({ ref: id.slice(0, 6).toUpperCase(), name, online, country, transport, pickup, group: joinGroup, category });
+    setDone({ id, ref: id.slice(0, 6).toUpperCase(), name, online, country, transport, pickup, group: joinGroup, category });
   }
 
   function reset() {
@@ -110,6 +135,12 @@ export default function RegistrationForm() {
           <p className="mt-1 text-sm text-bordeaux/75">Ton inscription est confirmée.</p>
         </div>
         <p className="mx-auto inline-block rounded-xl bg-bordeaux px-5 py-2 font-display text-3xl font-bold tracking-wider text-creme">{done.ref}</p>
+        {!done.online && (
+          <div>
+            <div className="mx-auto w-fit rounded-2xl border border-bordeaux/15 bg-white p-2"><Qr value={qrPayload(done.id)} size={150} /></div>
+            <p className="mt-1 text-xs text-bordeaux/70">Présente ce code à l&apos;entrée. Fais-en une capture d&apos;écran.</p>
+          </div>
+        )}
         <ul className="space-y-1 text-left text-sm">
           <li><b>Quand :</b> {EVENT.dateLabel}, {EVENT.time} (heure de Bujumbura)</li>
           {done.category !== "ordinary" && (
@@ -265,6 +296,11 @@ export default function RegistrationForm() {
           )}
         </>
       )}
+
+      {/* piège à robots : invisible, ne pas remplir */}
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={honeypot}
+        onChange={(e) => setHoneypot(e.target.value)} className="absolute left-[-9999px] h-0 w-0 opacity-0" />
+      <Turnstile onToken={onToken} resetSignal={resetSignal} />
 
       {error && <p role="alert" className="rounded-xl bg-rose/10 px-3.5 py-2 text-sm font-medium text-rose-deep">{error}</p>}
 

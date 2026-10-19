@@ -12,6 +12,7 @@ export type PickupPoint = {
   name: string;
   sort: number;
   active: boolean;
+  capacity: number | null;
 };
 
 export type Registration = {
@@ -29,6 +30,7 @@ export type Registration = {
   country: string | null;
   join_group: boolean;
   needs_transport: "yes" | "no" | "unsure";
+  arrival_mode?: "conference_bus" | "church_bus" | "own" | null;
   pickup_point: string | null;
   created_at: string;
 };

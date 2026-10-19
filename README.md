@@ -36,3 +36,11 @@ Dans `/admin`, filtre « En ligne » + le tableau « En ligne, par pays » te do
 - Textes, date, intervenants : `lib/config.ts`
 - Points de départ : page `/admin` > « Points de départ »
 - Couleurs : `tailwind.config.ts`
+
+## Version 3 : ordre des étapes
+1. Supabase > SQL Editor : exécute `supabase/migration-v3.sql` (rôles admin / pointeur, places des bus, moyen d'arrivée).
+2. Déploie le site (`git push`). Nouveautés : QR code sur la confirmation, onglet « Présences en direct », places des bus, page `/admin/badges`.
+3. Protection anti-spam (recommandé) :
+   - Vercel > Settings > Environment Variables : ajoute `SUPABASE_SERVICE_ROLE_KEY` (clé « secret » / « service_role » de Supabase, **jamais** dans un `NEXT_PUBLIC_…`).
+   - Optionnel : compte gratuit Cloudflare Turnstile, puis `NEXT_PUBLIC_TURNSTILE_SITE_KEY` et `TURNSTILE_SECRET_KEY`.
+   - Redéploie, teste une inscription, **puis** exécute `supabase/migration-antispam.sql`.

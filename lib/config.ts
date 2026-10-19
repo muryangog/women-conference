@@ -29,6 +29,13 @@ export const TRANSPORT_LABELS: Record<Transport, string> = {
 
 export type Attendance = "onsite" | "online";
 
+export type ArrivalMode = "conference_bus" | "church_bus" | "own";
+export const ARRIVAL_LABELS: Record<ArrivalMode, string> = {
+  conference_bus: "Bus de la conférence",
+  church_bus: "Bus de l'église",
+  own: "Par ses propres moyens",
+};
+
 export type Category = "ordinary" | "clergy" | "honorary";
 export const CATEGORY_LABELS: Record<Category, string> = {
   ordinary: "Ordinaire",
