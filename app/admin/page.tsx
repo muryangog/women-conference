@@ -57,6 +57,16 @@ export default function AdminPage() {
     }
   }, []);
 
+  // rafraîchissement léger : seulement les présences (petit), sans retélécharger toute la liste
+  const refreshCheckins = useCallback(async () => {
+    try {
+      setCheckins(await fetchAll<CheckIn>("check_ins", "registration_id, checked_in_at, device", [{ col: "registration_id" }]));
+      setRefreshed(new Date());
+    } catch {
+      /* on réessaie au prochain tour */
+    }
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSignedIn(!!data.session);
@@ -65,12 +75,16 @@ export default function AdminPage() {
     });
   }, [load]);
 
-  // onglet « Présences » : rafraîchi toutes les 15 secondes
+  // onglet « Présences » : présences toutes les 30 s, liste complète toutes les 5 min
   useEffect(() => {
     if (tab !== "live" || !isAdmin) return;
-    const t = setInterval(() => void load(), 15000);
+    let n = 0;
+    const t = setInterval(() => {
+      n += 1;
+      void (n % 10 === 0 ? load() : refreshCheckins());
+    }, 30000);
     return () => clearInterval(t);
-  }, [tab, isAdmin, load]);
+  }, [tab, isAdmin, load, refreshCheckins]);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -350,7 +364,7 @@ export default function AdminPage() {
             <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-rose" style={{ width: `${percent}%` }} /></div>
             <p className="mt-2 text-sm text-creme/70">
               {percent} % des inscrites sur place
-              {refreshed ? ` · mis à jour à ${refreshed.toLocaleTimeString("fr-FR")} (toutes les 15 s)` : ""}
+              {refreshed ? ` · mis à jour à ${refreshed.toLocaleTimeString("fr-FR")} (toutes les 30 s)` : ""}
               {" "}<button onClick={() => void load()} className="underline">Actualiser</button>
             </p>
           </div>
