@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
   const category = CATEGORIES.includes(b.category as string) ? (b.category as string) : "ordinary";
   const attendance = b.attendance === "online" ? "online" : "onsite";
-  const phone = str(b.phone, 20);
+  const phone = str(b.phone, 20) || null;
   const fullName = up(b.full_name, 120);
   const title = category === "ordinary" ? null : up(b.title, 80);
   const organization = category === "ordinary" ? null : up(b.organization, 160);
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
   const pickup = attendance === "onsite" && needsTransport === "yes" ? str(b.pickup_point, 120) : null;
 
   if (!fullName || fullName.length < 2) return NextResponse.json({ error: "Nom invalide." }, { status: 400 });
-  if (!/^\+[0-9]{7,15}$/.test(phone)) return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
+  if (phone && !/^\+[0-9]{7,15}$/.test(phone)) return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
   if (category !== "ordinary" && (!title || !organization)) return NextResponse.json({ error: "Titre et association requis." }, { status: 400 });
   if (attendance === "online" && !country) return NextResponse.json({ error: "Pays requis." }, { status: 400 });
   if (attendance === "onsite" && needsTransport === "yes" && !pickup) return NextResponse.json({ error: "Point de départ requis." }, { status: 400 });

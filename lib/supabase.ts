@@ -18,7 +18,7 @@ export type PickupPoint = {
 export type Registration = {
   id: string;
   full_name: string;
-  phone: string;
+  phone: string | null;
   commune: string | null;
   church: string | null;
   category: "ordinary" | "clergy" | "honorary";

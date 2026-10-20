@@ -102,7 +102,7 @@ export default function BadgesPage() {
               <div className="b-top">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/urugori-logo.png" alt="" style={{ height: "7mm", width: "auto" }} />
-                <span>24 OCT. 2026 · KINDINO LARGE</span>
+                <span>24 OCT. 2026 · KININDO LARGE</span>
               </div>
               <div className="b-mid">
                 <div className="b-text">
